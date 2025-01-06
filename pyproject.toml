@@ -1,40 +1,40 @@
-[tool.poetry]
+[project]
 name = "canary-cd"
 version = "0.1.dev0"
 description = "Continuous Deployment API for Container and Static Pages"
 authors = [
-    "Dominique Rehborn <dominique@rehborn.dev>"
+    { name = "Dominique Rehborn", email = "dominique@rehborn.dev" },
 ]
 readme = "README.md"
 license = "Apache-2.0"
 
-[tool.poetry.urls]
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv (>=1.0.1,<2.0.0)",
+    "uvicorn (>=0.34.0,<0.35.0)",
+    "fastapi (>=0.115.6,<0.116.0)",
+    "sqlmodel (>=0.0.22,<0.0.23)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "gitpython (>=3.1.44,<4.0.0)",
+    "pygithub (>=2.5.0,<3.0.0)",
+    "docker (>=7.1.0,<8.0.0)",
+    "pyyaml (>=6.0.2,<7.0.0)"
+]
+
+[project.urls]
 # https://peps.python.org/pep-0753/#well-known-labels
 documentation = "https://docs.rehborn.dev"
 source = "https://github.com/rehborn/canary-cd.git"
 
-[tool.poetry.scripts]
+[project.scripts]
 canarycd = "canary_cd.main:main"
 
-[tool.poetry.dependencies]
-python = "^3.12"
-python-dotenv = "^1.0.1"
-uvicorn = "^0.34.0"
-fastapi = "^0.115.3"
-sqlmodel = "^0.0.22"
-python-multipart = "^0.0.20"
-gitpython = "^3.1.43"
-pygithub = "^2.4.0"
-docker = "^7.1.0"
-dnspython = "^2.7.0"
-pyyaml = "^6.0.2"
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
-pylint = "^3.3.2"
 coverage = "^7.6.9"
+pylint = "^3.3.3"
 httpx = "^0.28.1"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
