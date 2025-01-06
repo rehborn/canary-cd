@@ -1,0 +1,14 @@
+services:
+  canary-cd:
+    image: ghcr.io/rehborn/canary-cd:latest
+    build: .
+    ports:
+      - "8001:80"
+    volumes:
+      - canary-cd:/data/
+      # - ./data/:/data/
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file: .env
+
+volumes:
+  canary-cd:
