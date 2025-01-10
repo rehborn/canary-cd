@@ -27,12 +27,12 @@ async def lifespan(_app: FastAPI):
 fastapi_options = {
     'lifespan': lifespan,
     'title': 'CanaryCD API',
-    'description': "",
+    'description': "Continuous Deployment API for Container and Static Pages",
     'version': __version__,
-    'license': {
-        'name': 'MIT',
-        'identifier': 'MIT',
-    }
+    'license_info': {
+        'name': 'Apache 2.0',
+        'url': 'https://www.apache.org/licenses/LICENSE-2.0.html',
+    },
 }
 
 app = FastAPI(**fastapi_options)
