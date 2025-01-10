@@ -6,7 +6,7 @@ ENV LOGLEVEL=INFO
 ENV APP_DIR=/app
 ENV DATA_DIR=/data
 
-RUN apk add curl git docker-cli-compose --no-cache
+RUN apk add curl git openssh-keygen docker-cli-compose --no-cache
 
 WORKDIR ${APP_DIR}
 COPY pyproject.toml poetry.lock ${APP_DIR}
