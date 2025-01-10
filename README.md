@@ -1,11 +1,27 @@
-# Canary-CD
+<div align="center">
 
-Continuous Deployment API for Container and Static Pages
+[![CanaryCD](https://docs.rehborn.dev/assets/canary-cd.png)](http://docs.rehborn.dev)
 
-### Docs
-- [Documentation](http://docs.rehborn.dev)
-- [API](http://docs.rehborn.dev/api/)
+**Continuous Deployment API for Container and Static Pages**
+
+[Source](https://github.com/rehborn/canary-cd) &middot; [Documentation](http://docs.rehborn.dev) 
+
+[![PyPI-Badge]](https://pypi.org/project/canary-cd/)
+![Python-Badge]
+[![License-Badge]](https://github.com/rehborn/canary-cd/blob/main/LICENSE)
+
+[PyPI-Badge]:
+https://img.shields.io/pypi/v/canary-cd?style=flat-square&color=306998&label=PyPI&labelColor=FFD43B
+[Python-Badge]:
+https://img.shields.io/pypi/pyversions/canary-cd?style=flat-square&color=306998&label=Python
+[License-Badge]:
+https://img.shields.io/github/license/rehborn/canary-cd?style=flat-square&label=License
+</div>
+
+## Documentation
+- [Setup](http://docs.rehborn.dev/setup/)
 - [CLI](http://docs.rehborn.dev/cli/)
+- [API](http://docs.rehborn.dev/api/) 
 
 ## Development
 
@@ -29,4 +45,17 @@ poetry run pytest tests/
 ```shell
 poetry run coverage run --source canary_id -m pytest tests/ 
 poetry run coverage report -m
+```
+
+### Docker
+
+#### test standalone
+```shell
+docker compose build
+docker compose up
+```
+
+#### test with traefik
+```shell
+docker compose -f compose.traefik.yml  up
 ```
