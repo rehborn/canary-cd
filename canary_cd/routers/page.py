@@ -41,7 +41,6 @@ async def page_create(page: PageBase, db: Database, background_tasks: Background
     db.refresh(db_page)
 
     os.makedirs(PAGES_CACHE / page.fqdn, exist_ok=True)
-    os.makedirs(DYN_CONFIG_CACHE / page.fqdn, exist_ok=True)
 
     # Create config
     background_tasks.add_task(page_traefik_config, db_page.fqdn)
