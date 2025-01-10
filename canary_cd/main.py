@@ -52,8 +52,13 @@ def main():
     host = os.environ.get('CANARY_HOST', '127.0.0.1')
     port = os.environ.get('CANARY_PORT', 8001)
     import uvicorn
-    uvicorn.run(app, host=host, port=int(port))
+    uvicorn.run(app,
+                host=host,
+                port=int(port),
+                proxy_headers=True,
+                forwarded_allow_ips='*',
+                log_level="info",
+                )
 
-
-if __name__ == "__main__":
-    main()
+    if __name__ == "__main__":
+        main()

@@ -16,5 +16,5 @@ ADD $SRC ${APP_DIR}/$SRC
 
 EXPOSE 80
 
-CMD ["poetry", "run", "uvicorn", "canary_cd.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "1"]
+CMD ["poetry", "run", "uvicorn", "canary_cd.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "'*'"]
 
