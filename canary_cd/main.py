@@ -3,6 +3,7 @@ Main application entry point.
 """
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 from fastapi import FastAPI, Request
 
@@ -39,12 +40,19 @@ for router in routers:
     app.include_router(router)
 
 
-@app.get('/', status_code=418, include_in_schema=False)
-async def coffeepot(request: Request):
-    """Coffeepot Entrypoint"""
+@app.get('/', status_code=200, include_in_schema=False)
+async def root(request: Request):
+    """Root Entrypoint"""
+    stat_at = datetime.fromtimestamp(os.path.getctime('/proc/1'))
+    uptime = datetime.now() - stat_at
     return {
-        "detail": "I'm a Coffeepot!",
-        "ip": request.client[0]
+        "detail": "I'm a Canary!",
+        "ip": request.client.host,
+        "version": __version__,
+        'created_timestamp': stat_at.timestamp(),
+        'created_at': stat_at.isoformat(timespec='seconds'),
+        'uptime': f'{uptime.days}d {(uptime.seconds // 3600)}h {((uptime.seconds // 60) % 60)}m {uptime.seconds % 60}s',
+        'uptime_total_seconds': uptime.total_seconds(),
     }
 
 
