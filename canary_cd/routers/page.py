@@ -60,7 +60,7 @@ async def page_delete(fqdn: str, db: Database) -> {}:
 
     # Cleanup static files and config
     shutil.rmtree(PAGES_CACHE / fqdn)
-    os.remove(PAGES_CACHE / 'dynamic' / f'{fqdn}.yml')
+    os.remove(DYN_CONFIG_CACHE / f'{fqdn}.yml')
 
     return {"detail": f"{fqdn} deleted"}
 
