@@ -55,7 +55,12 @@ jobs:
         run: |
           {
             echo 'STDOUT<<EOF'
-            poetry run coverage report -m --format=markdown
+            poetry run coverage report -m --skip-covered --format=markdown
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo 'TOTAL<<EOF'
+            poetry run coverage report -m --format=total
             echo EOF
           } >> "$GITHUB_OUTPUT"
 
@@ -64,8 +69,16 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const coverageTotal = ${{ steps.report.outputs.total }}; 
+            let coverageColor = 'green';
+            if (coverageTotal < 80) { coverageColor = 'yellow' };
+            if (coverageTotal < 60) { coverageColor = 'orange' };
+            if (coverageTotal < 50) { coverageColor = 'red' };
+            
             const output = `### 📊 Results for Run \`${{ github.run_id }}\`
 
+            ![Coverage](https://img.shields.io/badge/Coverage-${ coverageTotal }%25-${coverageColor})
+            
             #### Linter
             <details><summary>Linter Results</summary>
             
