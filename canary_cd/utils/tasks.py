@@ -101,7 +101,6 @@ async def git_pull(repo_path: Path, remote: str, branch: str, auth_type: str or 
     # SSH Key Authentication
     if auth_type == 'ssh':
         remote = f'{user}@{host}{port}:{path}'
-        repo.create_remote('origin', remote)
 
         temp_dir = tempfile.TemporaryDirectory()
         key_path = Path(temp_dir.name, 'keyfile')
@@ -119,13 +118,8 @@ async def git_pull(repo_path: Path, remote: str, branch: str, auth_type: str or 
         protocol = protocol if protocol else 'https'
         user = user if user and not user == 'git' else path.split('/')[0]  # guess user based on path
         remote = f'{protocol}://{user}:{auth_key}@{host}{port}/{path}'
-        repo.create_remote('origin', remote)
-    else:
-        repo.create_remote('origin', remote)
 
-    # if not repo.remotes:
-    #     logger.error(f'No remotes found for {auth_type} {remote}')
-    #     return False
+    repo.create_remote('origin', remote)
 
     try:
         repo.remotes.origin.pull(branch)
