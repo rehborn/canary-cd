@@ -14,6 +14,8 @@ services:
       - traefik-dyn:/data/dynamic/
       - /var/run/docker.sock:/var/run/docker.sock:ro
     env_file: .env
+    environment:
+      LOGLEVEL: 'DEBUG'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.whoami.rule=Host(`localhost`)"
