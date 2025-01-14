@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, status, BackgroundTasks, Depends, HTTPException, Query, UploadFile
 from sqlalchemy.orm.sync import update
 
+from canary_cd.utils.notify import discord_webhook
 from canary_cd.dependencies import *
 
 # from src.models.project import *
@@ -24,12 +25,16 @@ async def list_config(db: Database) -> list[Config]:
 
 # set config
 @router.put('', summary='Set Config')
-async def config_set(data: Config, db: Database) -> Config:
+async def config_set(data: Config, db: Database, background_task: BackgroundTasks) -> Config:
     if data.key not in CONFIG_KEYS:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Invalid Config key')
 
     if data.key == 'ROOT_KEY':
         data.value = CryptoHelper(SALT).hash(data.value)
+
+    if data.key == 'DISCORD_WEBHOOK':
+        message = f"### :information_source: Notification Setup Successful"
+        background_task.add_task(discord_webhook, data.value, message)
 
     q = select(Config).where(Config.key == data.key)
     config = db.exec(q).first()
