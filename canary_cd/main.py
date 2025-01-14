@@ -68,5 +68,5 @@ def main():
                 log_level="info",
                 )
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
