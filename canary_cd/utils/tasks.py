@@ -106,7 +106,7 @@ async def git_pull(repo_path: Path, remote: str, branch: str, auth_type: str or 
         key_path = Path(temp_dir.name, 'keyfile')
 
         def opener(p, f):
-            return os.open(p, f, 0o600)
+            return os.open(p, f, 0o400)
 
         open(key_path, 'w', encoding='utf-8', opener=opener).write(auth_key)
 
