@@ -16,7 +16,7 @@ router = APIRouter(prefix='/env',
 
 
 # list environments for project
-@router.get('/{project}/')
+@router.get('/{project}')
 async def envs_list(db: Database,
                     project: str,
                     offset: int = 0,
@@ -29,7 +29,7 @@ async def envs_list(db: Database,
 
 
 # create environment for project
-@router.post('/{project}/', status_code=status.HTTP_201_CREATED)
+@router.post('/{project}', status_code=status.HTTP_201_CREATED)
 async def env_create(project: str, env: EnvBase, db: Database) -> EnvDetails:
     q = select(Project).where(Project.name == project)
     db_project = db.exec(q).first()
@@ -46,7 +46,7 @@ async def env_create(project: str, env: EnvBase, db: Database) -> EnvDetails:
     return db_env
 
 # update environment
-@router.put('/{project}/{environment}/', summary='Update Environment')
+@router.put('/{project}/{environment}', summary='Update Environment')
 async def env_update(project: str, environment: str, data: EnvUpdate, db: Database) -> EnvDetails:
     q = select(Project).where(Project.name == project)
     db_project = db.exec(q).first()
@@ -67,7 +67,7 @@ async def env_update(project: str, environment: str, data: EnvUpdate, db: Databa
 
 
 # delete environment
-@router.delete('/{project}/{environment}/', summary='Delete Environment')
+@router.delete('/{project}/{environment}', summary='Delete Environment')
 async def env_delete(project: str, environment: str, db: Database) -> {}:
     db_project = db.exec(select(Project).where(Project.name == project)).first()
     if not db_project:
@@ -95,7 +95,7 @@ async def env_delete(project: str, environment: str, db: Database) -> {}:
 
 
 # list variables for environment
-@router.get('/{project}/{environment}/', summary='List Variables')
+@router.get('/{project}/{environment}', summary='List Variables')
 async def variable_list(db: Database,
                    project: str,
                    environment: str,
@@ -128,7 +128,7 @@ async def variable_list(db: Database,
 
 
 # set environment variable
-@router.put('/{project}/{environment}/', summary='Set or Update Environment Variable')
+@router.put('/{project}/{environment}', summary='Set or Update Environment Variable')
 async def variable_set(project: str,
                   environment: str,
                   data: VariableUpdate,
@@ -158,7 +158,7 @@ async def variable_set(project: str,
 
 
 # unset environment variable
-@router.delete('/{project}/{environment}/{variable}/')
+@router.delete('/{project}/{environment}/{variable}')
 async def variable_unset(project: str, environment: str, variable: str, db: Database) -> {}:
     db_project = db.exec(select(Project).where(Project.name == project)).first()
     if not db_project:

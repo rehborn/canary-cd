@@ -17,13 +17,13 @@ router = APIRouter(prefix='/config',
 
 
 # list config
-@router.get('/', summary='List Config')
+@router.get('', summary='List Config')
 async def list_config(db: Database) -> list[Config]:
     config = db.exec(select(Config).where(Config.key != 'ROOT_KEY')).all()
     return config
 
 # set config
-@router.put('/', summary='Set Config')
+@router.put('', summary='Set Config')
 async def config_set(data: Config, db: Database) -> Config:
     if data.key not in CONFIG_KEYS:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Invalid Config key')

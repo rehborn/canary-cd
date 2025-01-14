@@ -10,7 +10,7 @@ router = APIRouter(prefix='/git-key',
                    )
 
 
-@router.get('/', summary="List all Git Keys")
+@router.get('', summary="List all Git Keys")
 async def git_key_list(db: Database,
                        offset: int = 0,
                        limit: Annotated[int, Query(le=100)] = 100
@@ -26,7 +26,7 @@ async def git_key_get(name: str, db: Database) -> GitKeyDetails:
     return key
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, summary='Create a Git Key')
+@router.post('', status_code=status.HTTP_201_CREATED, summary='Create a Git Key')
 async def git_key_create(data: GitKeyCreate, db: Database) -> GitKeyDetails:
     if db.exec(select(GitKey).where(GitKey.name == data.name)).first():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Git Key already exists')

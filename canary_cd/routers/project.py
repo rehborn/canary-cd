@@ -13,7 +13,7 @@ router = APIRouter(prefix='/project',
 
 
 # list projects
-@router.get('/', summary='List Projects')
+@router.get('', summary='List Projects')
 async def project_list(db: Database,
                        offset: int = 0,
                        limit: Annotated[int, Query(le=100)] = 100
@@ -31,7 +31,7 @@ async def project_get(name: str, db: Database) -> ProjectDetails:
 
 
 # create project
-@router.post('/', status_code=status.HTTP_201_CREATED, summary='Create a Project')
+@router.post('', status_code=status.HTTP_201_CREATED, summary='Create a Project')
 async def project_create(data: ProjectCreate, db: Database) -> ProjectCreatedDetails:
     if db.exec(select(Project).where(Project.name == data.name)).first():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Project already exists')

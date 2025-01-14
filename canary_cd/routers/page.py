@@ -15,7 +15,7 @@ router = APIRouter(prefix='/page',
 
 
 # list page
-@router.get('/', summary="List all pages")
+@router.get('', summary="List all pages")
 async def page_list(db: Database,
                     offset: int = 0,
                     limit: Annotated[int, Query(le=100)] = 100
@@ -24,7 +24,7 @@ async def page_list(db: Database,
 
 
 # create page
-@router.post('/', status_code=status.HTTP_201_CREATED, summary="Create a new page")
+@router.post('', status_code=status.HTTP_201_CREATED, summary="Create a new page")
 async def page_create(page: PageBase, db: Database, background_tasks: BackgroundTasks) -> PageDetails:
     if db.exec(select(Page).where(Page.fqdn == page.fqdn)).first():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
