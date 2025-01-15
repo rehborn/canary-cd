@@ -1,7 +1,7 @@
 import shutil
 import tempfile
 from starlette.requests import Request
-from canary_cd.utils.tasks import extract_page, page_traefik_config
+from canary_cd.utils.tasks import extract_page, page_init
 
 from fastapi import APIRouter, status, BackgroundTasks, Query
 
@@ -40,10 +40,7 @@ async def page_create(page: PageBase, db: Database, background_tasks: Background
     db.commit()
     db.refresh(db_page)
 
-    os.makedirs(PAGES_CACHE / page.fqdn, exist_ok=True)
-
-    # Create config
-    background_tasks.add_task(page_traefik_config, db_page.fqdn)
+    background_tasks.add_task(page_init, page.fqdn)
 
     return db_page
 

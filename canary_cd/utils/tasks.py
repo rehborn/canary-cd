@@ -279,6 +279,12 @@ async def extract_page(fqdn, temp_dir, job_id=None):
     logger.debug(f"Page {job_id}: cleanup temporary files")
     temp_dir.cleanup()
 
+async def page_init(fqdn: str):
+    os.makedirs(PAGES_CACHE / fqdn, exist_ok=True)
+    open(PAGES_CACHE / fqdn / 'index.html', 'w').write('<h1>PONG</h1>')
+    open(PAGES_CACHE / fqdn / '404.html', 'w').write('<h1>404</h1>')
+    await page_traefik_config(fqdn)
+
 
 async def page_traefik_config(fqdn: str):
     config = {
