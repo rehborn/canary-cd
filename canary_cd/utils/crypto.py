@@ -21,9 +21,6 @@ def generate_salt(key_size: int = 256):
     """generate a random salt."""
     return b64encode(AESGCM.generate_key(key_size)).decode('utf-8')
 
-#k = AESGCM.generate_key(256)
-#e = b64encode(k).decode()
-#d = b64decode(e.encode())
 
 class CryptoHelper:
     """CryptoHelper Class"""
