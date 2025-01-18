@@ -43,8 +43,8 @@ poetry run pytest tests/
 
 ### Coverage
 ```shell
-poetry run coverage run --source canary_id -m pytest tests/ 
-poetry run coverage report -m
+poetry run coverage run --source canary_cd -m pytest tests/
+poetry run coverage report -m --skip-covered
 ```
 
 ### Docker
