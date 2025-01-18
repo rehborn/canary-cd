@@ -17,6 +17,67 @@ def random_string(length: int = 64, p: bool = False) -> str:
     token = "".join(SystemRandom().choice(allowed_chars) for i in range(length))
     return token
 
+
+def random_words(length: int = 2, sep: str = '-') -> str:
+    adjectives = [
+        "absurd",
+        "amusing",
+        "astonishing",
+        "bizarre",
+        "bouncing",
+        "comical",
+        "dapper",
+        "daring",
+        "delightful",
+        "eccentric",
+        "elated",
+        "fantastic",
+        "goofy",
+        "hilarious",
+        "incredible",
+        "jaunty",
+        "jovial",
+        "kooky",
+        "laughable",
+        "ludicrous",
+        "magnificent",
+        "marvellous",
+        "peculiar",
+        "quizzical",
+        "ridiculous",
+        "silly",
+        "stupendous",
+        "wacky",
+        "zany"
+    ]
+
+    nouns = [
+        "blackcap",
+        "canary",
+        "chaffinch",
+        "cockatoo",
+        "Common",
+        "linnet",
+        "grosbeak",
+        "koel",
+        "lyrebird",
+        "magpie",
+        "mockingbird",
+        "nightingale",
+        "oriole",
+        "passerine",
+        "robin",
+        "skylark",
+        "sparrow",
+        "tanager",
+        "thrush",
+        "wagtail",
+        "warbler",
+        "woodpecker",
+    ]
+    return sep.join([SystemRandom().choice(adjectives) for i in range(length-1)] + [SystemRandom().choice(nouns)])
+
+
 def generate_salt(key_size: int = 256):
     """generate a random salt."""
     return b64encode(AESGCM.generate_key(key_size)).decode('utf-8')
@@ -52,18 +113,21 @@ class CryptoHelper:
 
 
 if __name__ == '__main__':
+    print("random string ", random_string())
+    print("random string ", random_string(True))
+
+    print("random word ", random_words())
+    print("random word ", random_words(3))
+
     _salt = generate_salt()
     print("salt ", _salt)
 
     CH = CryptoHelper(_salt)
-    print("random string ", random_string())
-    print("random string ", random_string(p=True))
 
-
-    enc = CH.encrypt("string")
+    nonce, enc = CH.encrypt("string")
     print("encrypted ", enc)
 
-    dec = CH.decrypt(enc)
+    dec = CH.decrypt(nonce, enc)
     print("decrypted ", dec)
 
     HASHED = CH.hash('string')
