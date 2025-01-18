@@ -49,7 +49,7 @@ REPO_EXAMPLES = [
     "ssh://git@example.com:2222/user/repo.git",
 ]
 
-AUTH_KEY_PATTERN = r"^(ssh:|pat:ghp_)[\w\d-]+$"
+AUTH_KEY_PATTERN = r".*"
 AUTH_KEY_EXAMPLES = ["ssh-private-key", "ghp_1234"]
 PUBLIC_KEY_EXAMPLES = ['ssh-ed25519 AAAAC..lGM key']
 

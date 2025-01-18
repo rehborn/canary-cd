@@ -1,31 +1,24 @@
-import shutil
-from typing import Annotated
-
-from fastapi import APIRouter, status, BackgroundTasks, Depends, HTTPException, Query, UploadFile
-from sqlalchemy.orm.sync import update
+from fastapi import APIRouter, status, BackgroundTasks
 
 from canary_cd.utils.notify import discord_webhook
 from canary_cd.dependencies import *
 
-# from src.models.project import *
-# from src.models.env import *
-
 router = APIRouter(prefix='/config',
-                   tags=['Config'],
+                   tags=['Canary Config'],
                    dependencies=[Depends(validate_admin)],
                    responses={404: {"description": "Not found"}},
                    )
 
 
 # list config
-@router.get('', summary='List Config')
-async def list_config(db: Database) -> list[Config]:
+@router.get('', summary='List Full Configuration')
+async def list_config(db: Database) -> list[ConfigUpdate]:
     config = db.exec(select(Config).where(Config.key != 'ROOT_KEY')).all()
     return config
 
 # set config
-@router.put('', summary='Set Config')
-async def config_set(data: Config, db: Database, background_task: BackgroundTasks) -> Config:
+@router.put('', summary='Update Configuration')
+async def config_set(data: ConfigUpdate, db: Database, background_task: BackgroundTasks) -> ConfigUpdate:
     if data.key not in CONFIG_KEYS:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Invalid Config key')
 
@@ -50,7 +43,7 @@ async def config_set(data: Config, db: Database, background_task: BackgroundTask
     return config
 
 
-@router.delete('/{key}', summary='Unset Config')
+@router.delete('/{key}', summary='Delete Configuration')
 async def config_delete(key: str, db: Database) -> {}:
     if key == 'ROOT_KEY':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='ROOT_KEY cannot be deleted')

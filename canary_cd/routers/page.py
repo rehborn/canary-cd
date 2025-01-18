@@ -1,7 +1,8 @@
 import shutil
 import tempfile
-from starlette.requests import Request
-from canary_cd.utils.tasks import extract_page, page_init
+
+from sqlmodel import col
+from canary_cd.utils.tasks import page_init
 
 from fastapi import APIRouter, status, BackgroundTasks, Query
 
@@ -25,7 +26,7 @@ async def page_list(db: Database,
 
 # create page
 @router.post('', status_code=status.HTTP_201_CREATED, summary="Create a new page")
-async def page_create(page: PageBase, db: Database, background_tasks: BackgroundTasks) -> PageDetails:
+async def page_create(page: PageCreate, db: Database, background_tasks: BackgroundTasks) -> PageDetails:
     if db.exec(select(Page).where(Page.fqdn == page.fqdn)).first():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='Page already exists')
@@ -35,7 +36,7 @@ async def page_create(page: PageBase, db: Database, background_tasks: Background
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='Already in use by Redirect source {db_redirect_source.source}')
 
-    db_page = Page.model_validate(PageBase(fqdn=page.fqdn))
+    db_page = Page.model_validate(PageCreate(fqdn=page.fqdn))
     db.add(db_page)
     db.commit()
     db.refresh(db_page)
@@ -76,18 +77,3 @@ async def page_deploy_key(fqdn: str, db: Database):
     db.refresh(page_db)
 
     return {"token": token}
-
-
-@router.post("/{fqdn}/deploy", summary="Deploy a page")
-async def page_deploy_stream(fqdn: str, request: Request, background_tasks: BackgroundTasks):
-    job_id = uuid.uuid4()
-    logger.debug(f"Page {job_id}: uploading ")
-
-    temp_dir = tempfile.TemporaryDirectory(delete=False)
-    with open(Path(temp_dir.name) / "stream-upload", "wb") as f:
-        async for chunk in request.stream():
-            f.write(chunk)
-
-    background_tasks.add_task(extract_page, fqdn, temp_dir, job_id)
-
-    return {"detail": f"{fqdn} uploaded"}
