@@ -91,6 +91,7 @@ class VariableValueDetails(VariableDetails):
 # Page
 class PageCreate(BaseModel):
     fqdn: str = Field(min_length=1, max_length=256, pattern=FQDN_PATTERN, examples=FQDN_EXAMPLES)
+    cors_hosts: str | None = Field(None)
 
 class PageDetails(PageCreate, DateBase):
     id: uuid.UUID = Field()

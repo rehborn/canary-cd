@@ -41,7 +41,7 @@ async def page_create(page: PageCreate, db: Database, background_tasks: Backgrou
     db.commit()
     db.refresh(db_page)
 
-    background_tasks.add_task(page_init, page.fqdn)
+    background_tasks.add_task(page_init, page.fqdn, page.cors_hosts)
 
     return db_page
 

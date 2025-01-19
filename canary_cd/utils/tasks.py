@@ -134,7 +134,8 @@ async def git_pull(repo_path: Path, remote: str, branch: str, auth_type: str or 
 
     return successful_cloned
 
-def find_manifests(repo_path: Path, branch = None) -> list:
+
+def find_manifests(repo_path: Path, branch=None) -> list:
     manifests = []
     for filename in os.listdir(repo_path):
         name, ext = os.path.splitext(filename)
@@ -148,7 +149,7 @@ def find_manifests(repo_path: Path, branch = None) -> list:
     return manifests
 
 
-async def service_deploy(repo_path: Path, variables: dict, branch = None) -> str:
+async def service_deploy(repo_path: Path, variables: dict, branch=None) -> str:
     os.chdir(repo_path)
     manifests = find_manifests(repo_path, branch)
 
@@ -249,7 +250,8 @@ async def deploy_stop(repo_path: Path):
     stdout, stderr = await _run_cmd(param)
     return {'logs': stdout}
 
-async def deploy_status(repo_path: Path, branch = None):
+
+async def deploy_status(repo_path: Path, branch=None):
     try:
         os.chdir(repo_path)
     except FileNotFoundError:
@@ -300,14 +302,17 @@ async def extract_page(fqdn, temp_dir, job_id=None):
     logger.debug(f"Page {job_id}: cleanup temporary files")
     temp_dir.cleanup()
 
-async def page_init(fqdn: str):
+
+async def page_init(fqdn: str, cors_hosts: str):
     os.makedirs(PAGES_CACHE / fqdn, exist_ok=True)
     open(PAGES_CACHE / fqdn / 'index.html', 'w').write('<h1>PONG</h1>')
     open(PAGES_CACHE / fqdn / '404.html', 'w').write('<h1>404</h1>')
-    await page_traefik_config(fqdn)
+
+    cors_hosts = cors_hosts.split(',') if cors_hosts else []
+    await page_traefik_config(fqdn, cors_hosts)
 
 
-async def page_traefik_config(fqdn: str):
+async def page_traefik_config(fqdn: str, cors_hosts: list = None):
     config = {
         'http': {
             'routers': {
@@ -333,6 +338,19 @@ async def page_traefik_config(fqdn: str):
             }
         }
     }
+    if cors_hosts:
+        config['http']['routers'][f'backend-router-{fqdn}']['middlewares'] = [f'cors-middleware-{fqdn}']
+        config['http']['middlewares'] = {
+            f'cors-middleware-{fqdn}': {
+                'headers': {
+                    'accessControlAllowMethods': ['GET', 'OPTIONS', 'PUT'],
+                    'accessControlAllowHeaders': '*',
+                    'accessControlAllowOriginList': cors_hosts,
+                    'accessControlMaxAge': 100,
+                    'addVaryHeader': True,
+                }
+            }
+        }
     with open(DYN_CONFIG_CACHE / f'{fqdn}.yml', 'w') as dump:
         yaml.dump(config, dump)
 

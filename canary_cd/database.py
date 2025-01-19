@@ -89,6 +89,7 @@ class Secret(SQLModel, table=True):
 class Page(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     fqdn: str = Field(unique=True)
+    cors_hosts: str | None = Field(default=None)
     token: str | None = Field(default=None)
 
     created_at: datetime = Field(default_factory=now)
