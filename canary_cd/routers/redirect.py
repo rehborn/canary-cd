@@ -65,6 +65,6 @@ async def redirect_delete(fqdn: str, db: Database):
     db.commit()
 
     # Cleanup config
-    os.remove(PAGES_CACHE / 'dynamic' / f'{fqdn}.yml')
+    os.remove(DYN_CONFIG_CACHE / f'{fqdn}.yml')
 
     return {"detail": f"{fqdn} deleted"}
