@@ -36,7 +36,7 @@ jobs:
       - name: Run Coverage
         id: coverage
         run: |
-          uv run coverage run --omit=*/migrations/* src/manage.py test tests/ --settings=core.settings.test
+          uv run coverage run --source canary_cd -m pytest
 
       - name: Create Coverage Report
         id: report
