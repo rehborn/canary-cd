@@ -38,7 +38,7 @@ jobs:
         run: |
           {
             echo 'STDOUT<<EOF'
-            uv run python src/manage.py test tests/ --settings=core.settings.test
+            uv run pytest tests/
             echo EOF
           } >> "$GITHUB_OUTPUT"
           
