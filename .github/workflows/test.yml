@@ -4,9 +4,6 @@ on:
     branches:
       - main
 
-env:
-  python-version: 3.13
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -14,6 +11,11 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version: [ 3.12, 3.13 ]
 
     if: github.actor != 'renovate[bot]'
 
@@ -23,10 +25,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python ${{ env.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.python-version }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
         run: |
