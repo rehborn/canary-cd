@@ -101,13 +101,12 @@ async def git_pull(repo_path: Path, remote: str, branch: str, auth_type: str or 
     # SSH Key Authentication
     if auth_type == 'ssh':
         remote = f'{user}@{host}{port}:{path}'
-        repo.create_remote('origin', remote)
 
         temp_dir = tempfile.TemporaryDirectory()
         key_path = Path(temp_dir.name, 'keyfile')
 
         def opener(p, f):
-            return os.open(p, f, 0o600)
+            return os.open(p, f, 0o400)
 
         open(key_path, 'w', encoding='utf-8', opener=opener).write(auth_key)
 
@@ -119,13 +118,8 @@ async def git_pull(repo_path: Path, remote: str, branch: str, auth_type: str or 
         protocol = protocol if protocol else 'https'
         user = user if user and not user == 'git' else path.split('/')[0]  # guess user based on path
         remote = f'{protocol}://{user}:{auth_key}@{host}{port}/{path}'
-        repo.create_remote('origin', remote)
-    else:
-        repo.create_remote('origin', remote)
 
-    # if not repo.remotes:
-    #     logger.error(f'No remotes found for {auth_type} {remote}')
-    #     return False
+    repo.create_remote('origin', remote)
 
     try:
         repo.remotes.origin.pull(branch)
@@ -141,20 +135,23 @@ async def git_pull(repo_path: Path, remote: str, branch: str, auth_type: str or 
     return successful_cloned
 
 
-async def service_deploy(env: str, repo_path: Path, variables: dict) -> str:
-    os.chdir(repo_path)
-    repo_files_root = os.listdir(repo_path)
-
+def find_manifests(repo_path: Path, branch=None) -> list:
     manifests = []
-    for filename in repo_files_root:
+    for filename in os.listdir(repo_path):
         name, ext = os.path.splitext(filename)
         if ext in ['.yaml', '.yml']:
             if name in ['docker-compose', 'compose']:
                 logger.debug(f"Found: {name}")
                 manifests.append(filename)
-            elif name in [f'docker-compose.{env}', f'compose.{env}']:
+            if branch and name in [f'docker-compose.{branch}', f'compose.{branch}']:
                 logger.debug(f"Found: {name}")
                 manifests.append(filename)
+    return manifests
+
+
+async def service_deploy(repo_path: Path, variables: dict, branch=None) -> str:
+    os.chdir(repo_path)
+    manifests = find_manifests(repo_path, branch)
 
     if manifests:
         params = ' -f '.join(manifests)
@@ -180,39 +177,39 @@ async def service_deploy(env: str, repo_path: Path, variables: dict) -> str:
     return out
 
 
-async def deploy_init(db: Database, environment_id: uuid.UUID):
-    q = select(Environment).where(Environment.id == environment_id)
-    env = db.exec(q).one()
-    logger.info(f"[{env.project.name}] Deployment initialized for environment {env.name}")
+async def deploy_init(db: Database, project_id: uuid.UUID):
+    q = select(Project).where(Project.id == project_id)
+    project = db.exec(q).one()
+    logger.info(f"[{project.name}] Deployment initialized")
 
     # get webhook url
     webhook = db.exec(select(Config).where(Config.key == 'DISCORD_WEBHOOK')).first()
     webhook_url = webhook.value if webhook else None
     if webhook_url:
-        message = f"### :arrow_forward: {env.project.name}:{env.name}@{env.branch} Deployment started"
+        message = f"### :arrow_forward: [{project.name}] @{project.branch} Deployment started"
         discord_webhook(webhook_url, message)
 
     # decrypt environment variables
-    logger.debug(f"[{env.project.name}] Decrypting {len(env.variables)} Variables for Environment {env.name} ")
+    logger.debug(f"[{project.name}] Decrypting {len(project.secrets)} Variables for Environment {project.name} ")
     variables = {}
-    for var in env.variables:
+    for var in project.secrets:
         variables[var.key] = ch.decrypt(json.loads(var.value))
 
     out = '-'
-    if env.project.remote:
-        logger.debug(f"[{env.project.name}] Pulling Repository {env.project.remote}@{env.branch}")
-        repo_path = REPO_CACHE / env.project.name / f"{env.name}-{env.branch}"
+    if project.remote:
+        logger.debug(f"[{project.name}] Pulling Repository {project.remote}@{project.branch}")
+        repo_path = REPO_CACHE / project.name
         auth_key = None
         auth_type = None
 
-        if env.project.git_key:
-            auth_key = ch.decrypt(env.project.git_key.nonce, env.project.git_key.ciphertext)
-            auth_type = env.project.git_key.auth_type
+        if project.auth:
+            auth_key = ch.decrypt(project.auth.nonce, project.auth.ciphertext)
+            auth_type = project.auth.auth_type
 
         options = {
             'repo_path': repo_path,
-            'remote': env.project.remote,
-            'branch': env.branch,
+            'remote': project.remote,
+            'branch': project.branch,
             'auth_type': auth_type,
             'auth_key': auth_key,
         }
@@ -221,46 +218,66 @@ async def deploy_init(db: Database, environment_id: uuid.UUID):
 
         # run deployment
         if clone_successful:
-            logger.info(f"[{env.project.name}] Deploying {repo_path}")
-            out = await service_deploy(env.name, repo_path, variables)
+            logger.info(f"[{project.name}] Deploying {repo_path}")
+            out = await service_deploy(repo_path, variables, project.branch)
             logger.debug(out)
         else:
-            message = f"[{env.project.name}] Cloning not successful, please check logs"
+            message = f"[{project.name}] Cloning not successful, please check logs"
             logger.error(message)
     else:
-        message = f"[{env.project.name}] No Remote Found"
+        message = f"[{project.name}] No Remote Found"
         logger.error(message)
 
     # send notification
     if webhook_url:
-        logger.debug(f"[{env.project.name}] Sending Notifications")
+        logger.debug(f"[{project.name}] Sending Notifications")
         messages = [
-            f"### :information_source: {env.project.name}:{env.name}@{env.branch} Status\n```{out[:2000]}```\n"
-            f"### :white_check_mark: {env.project.name}:{env.name}@{env.branch} Deployed"
+            f"### :information_source: {project.name}:{project.remote}@{project.branch} Status\n```{out[:2000]}```\n"
+            f"### :white_check_mark: {project.name}:{project.remote}@{project.branch} Deployed"
         ]
         for message in messages:
             discord_webhook(webhook_url, message)
 
 
-async def deploy_status(repo_path: Path):
+async def deploy_stop(repo_path: Path):
     try:
         os.chdir(repo_path)
     except FileNotFoundError:
         logger.error(f"[{repo_path.name}] does not exist, cannot fetch status")
-        return {'detail', f"[{repo_path.name}] does not exist, cannot fetch status"}
+        return
+
+    param = 'docker compose down'
+    stdout, stderr = await _run_cmd(param)
+    return {'logs': stdout}
+
+
+async def deploy_status(repo_path: Path, branch=None):
+    try:
+        os.chdir(repo_path)
+    except FileNotFoundError:
+        logger.error(f"[{repo_path.name}] does not exist, cannot fetch status")
+        return {'detail': 'repo_path not found'}
+
+    manifests = find_manifests(repo_path, branch)
+    if manifests:
+        params = ' -f '.join(manifests)
+    else:
+        logger.error(f"[{repo_path}] no manifests found")
+        return {'detail': 'no manifests found'}
 
     results = {}
-
-    param = 'docker compose ps --format json'
+    param = f'docker compose -f {params} ps --format json'
     stdout, stderr = await _run_cmd(param)
-    ps = json.loads(stdout)
-    if type(ps) == dict:
-        ps = [ps]
-    results['ps'] = ps
+    if stdout:
+        ps = json.loads(stdout)
+        if type(ps) == dict:
+            ps = [ps]
+        results['ps'] = ps
 
     param = 'docker compose logs --tail=25'
     stdout, stderr = await _run_cmd(param)
-    results['logs'] = stdout
+    if stdout:
+        results['logs'] = stdout
 
     return results
 
@@ -286,7 +303,16 @@ async def extract_page(fqdn, temp_dir, job_id=None):
     temp_dir.cleanup()
 
 
-async def page_traefik_config(fqdn: str):
+async def page_init(fqdn: str, cors_hosts: str):
+    os.makedirs(PAGES_CACHE / fqdn, exist_ok=True)
+    open(PAGES_CACHE / fqdn / 'index.html', 'w').write('<h1>PONG</h1>')
+    open(PAGES_CACHE / fqdn / '404.html', 'w').write('<h1>404</h1>')
+
+    cors_hosts = cors_hosts.split(',') if cors_hosts else []
+    await page_traefik_config(fqdn, cors_hosts)
+
+
+async def page_traefik_config(fqdn: str, cors_hosts: list = None):
     config = {
         'http': {
             'routers': {
@@ -312,6 +338,19 @@ async def page_traefik_config(fqdn: str):
             }
         }
     }
+    if cors_hosts:
+        config['http']['routers'][f'backend-router-{fqdn}']['middlewares'] = [f'cors-middleware-{fqdn}']
+        config['http']['middlewares'] = {
+            f'cors-middleware-{fqdn}': {
+                'headers': {
+                    'accessControlAllowMethods': ['GET', 'OPTIONS', 'PUT'],
+                    'accessControlAllowHeaders': '*',
+                    'accessControlAllowOriginList': cors_hosts,
+                    'accessControlMaxAge': 100,
+                    'addVaryHeader': True,
+                }
+            }
+        }
     with open(DYN_CONFIG_CACHE / f'{fqdn}.yml', 'w') as dump:
         yaml.dump(config, dump)
 

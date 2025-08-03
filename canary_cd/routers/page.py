@@ -1,7 +1,8 @@
 import shutil
 import tempfile
-from starlette.requests import Request
-from canary_cd.utils.tasks import extract_page, page_traefik_config
+
+from sqlmodel import col
+from canary_cd.utils.tasks import page_init
 
 from fastapi import APIRouter, status, BackgroundTasks, Query
 
@@ -15,17 +16,24 @@ router = APIRouter(prefix='/page',
 
 
 # list page
-@router.get('/', summary="List all pages")
+@router.get('', summary="List all pages")
 async def page_list(db: Database,
                     offset: int = 0,
                     limit: Annotated[int, Query(le=100)] = 100
                     ) -> list[PageDetails]:
     return db.exec(select(Page).order_by(col(Page.fqdn).asc()).offset(offset).limit(limit)).all()
 
+# get page details
+@router.get('/{fqdn}', summary='Get Page Details')
+async def page_get(fqdn: str, db: Database) -> PageDetails:
+    page = db.exec(select(Page).where(Page.fqdn == fqdn)).first()
+    if not page:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Page does not exists')
+    return page
 
 # create page
-@router.post('/', status_code=status.HTTP_201_CREATED, summary="Create a new page")
-async def page_create(page: PageBase, db: Database, background_tasks: BackgroundTasks) -> PageDetails:
+@router.post('', status_code=status.HTTP_201_CREATED, summary="Create a new page")
+async def page_create(page: PageCreate, db: Database, background_tasks: BackgroundTasks) -> PageDetails:
     if db.exec(select(Page).where(Page.fqdn == page.fqdn)).first():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='Page already exists')
@@ -35,16 +43,12 @@ async def page_create(page: PageBase, db: Database, background_tasks: Background
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='Already in use by Redirect source {db_redirect_source.source}')
 
-    db_page = Page.model_validate(PageBase(fqdn=page.fqdn))
+    db_page = Page.model_validate(PageCreate(fqdn=page.fqdn))
     db.add(db_page)
     db.commit()
     db.refresh(db_page)
 
-    os.makedirs(PAGES_CACHE / page.fqdn, exist_ok=True)
-    os.makedirs(DYN_CONFIG_CACHE / page.fqdn, exist_ok=True)
-
-    # Create config
-    background_tasks.add_task(page_traefik_config, db_page.fqdn)
+    background_tasks.add_task(page_init, page.fqdn, page.cors_hosts)
 
     return db_page
 
@@ -61,7 +65,7 @@ async def page_delete(fqdn: str, db: Database) -> {}:
 
     # Cleanup static files and config
     shutil.rmtree(PAGES_CACHE / fqdn)
-    os.remove(PAGES_CACHE / 'dynamic' / f'{fqdn}.yml')
+    os.remove(DYN_CONFIG_CACHE / f'{fqdn}.yml')
 
     return {"detail": f"{fqdn} deleted"}
 
@@ -80,18 +84,3 @@ async def page_deploy_key(fqdn: str, db: Database):
     db.refresh(page_db)
 
     return {"token": token}
-
-
-@router.post("/{fqdn}/deploy", summary="Deploy a page")
-async def page_deploy_stream(fqdn: str, request: Request, background_tasks: BackgroundTasks):
-    job_id = uuid.uuid4()
-    logger.debug(f"Page {job_id}: uploading ")
-
-    temp_dir = tempfile.TemporaryDirectory(delete=False)
-    with open(Path(temp_dir.name) / "stream-upload", "wb") as f:
-        async for chunk in request.stream():
-            f.write(chunk)
-
-    background_tasks.add_task(extract_page, fqdn, temp_dir, job_id)
-
-    return {"detail": f"{fqdn} uploaded"}

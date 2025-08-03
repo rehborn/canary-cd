@@ -1,10 +1,10 @@
 """Main Test"""
 from context import *
 
-def test_coffeepot(client: TestClient):
+def test_root(client: TestClient):
     response = client.get("/")
-    assert response.status_code == 418
-    assert response.json()["detail"] == "I'm a Coffeepot!"
+    assert response.status_code == 200
+    assert response.json()["detail"] == "I'm a Canary!"
 
 def test_failed_auth(client: TestClient):
     client.headers = {}

@@ -1,11 +1,12 @@
-from canary_cd.routers import config, git_key, project, env, page, redirect, deploy
+from canary_cd.routers import config, auth, project, secret, page, redirect, deploy, webhook
 
 routers = [
-    git_key.router,
+    config.router,
+    auth.router,
     project.router,
-    env.router,
+    secret.router,
     page.router,
     redirect.router,
     deploy.router,
-    config.router,
+    webhook.router,
 ]

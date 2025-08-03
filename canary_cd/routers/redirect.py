@@ -11,7 +11,7 @@ router = APIRouter(prefix='/redirect',
 
 
 # list redirects
-@router.get('/', summary='List Redirects')
+@router.get('', summary='List Redirects')
 async def redirect_list(db: Database,
                         offset: int = 0,
                         limit: Annotated[int, Query(le=100)] = 100
@@ -20,7 +20,7 @@ async def redirect_list(db: Database,
 
 
 # create redirects
-@router.post('/', status_code=status.HTTP_201_CREATED, summary="Create a new Redirect")
+@router.post('', status_code=status.HTTP_201_CREATED, summary="Create a new Redirect")
 async def redirect_create(redirect: RedirectCreate, db: Database, background_tasks: BackgroundTasks) -> RedirectDetails:
     if db.exec(select(Redirect).where(Redirect.source == redirect.source)).first():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
@@ -65,6 +65,6 @@ async def redirect_delete(fqdn: str, db: Database):
     db.commit()
 
     # Cleanup config
-    os.remove(PAGES_CACHE / 'dynamic' / f'{fqdn}.yml')
+    os.remove(DYN_CONFIG_CACHE / f'{fqdn}.yml')
 
     return {"detail": f"{fqdn} deleted"}

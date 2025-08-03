@@ -5,31 +5,11 @@ from typing import Annotated, List, Optional
 
 from fastapi import Depends
 from sqlmodel import SQLModel, Field, DateTime, TIMESTAMP, JSON, ARRAY, Column, String
-from sqlmodel import Session, create_engine, select, col
+from sqlmodel import Session, create_engine, select, column, asc, desc
 from sqlmodel import UniqueConstraint, Relationship
 
 from canary_cd.settings import SALT, SQLITE, logger
 from canary_cd.utils.crypto import random_string, CryptoHelper
-
-CONFIG_KEYS = [
-    'ROOT_KEY',
-
-    # not implemented
-    # Notification Config
-    'SLACK_WEBHOOK',
-    'DISCORD_WEBHOOK',
-
-    # GitHub App Config
-    'GITHUB_APP_ID',
-    'GITHUB_SECRET_FILE',
-    'GITHUB_WEBHOOK_SECRET',
-]
-
-AUTH_TYPES = [
-    "ssh",
-    "pat",
-    "token"
-]
 
 
 def now() -> datetime:
@@ -44,11 +24,12 @@ class Config(SQLModel, table=True):
     value: str = Field(min_length=1, max_length=64)
 
 
-class GitKey(SQLModel, table=True):
+class Auth(SQLModel, table=True):
     """
-    GitKey for Pulling Repositories
-    can be assigned to several Projects
-    can hold SSH Privat/Public Keys and GitHub PAT
+    Authentication for Pulling Repositories
+    - can be assigned to several Projects
+    - can hold SSH Privat/Public Keys and GitHub PAT
+
     """
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, unique=True)
 
@@ -61,60 +42,39 @@ class GitKey(SQLModel, table=True):
     created_at: datetime = Field(default_factory=now)
     updated_at: datetime = Field(default_factory=now, sa_column_kwargs={"onupdate": now})
 
-    projects: list["Project"] = Relationship(back_populates="git_key")
+    projects: list["Project"] = Relationship(back_populates="auth")
 
 
 class Project(SQLModel, table=True):
     """
     Projects can assign a single remote and a matching Key
-    several Environments can be assigned to a single Project
     """
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, unique=True)
 
     name: str = Field(index=True, unique=True, nullable=False, min_length=1, max_length=256)
     remote: str | None = Field(default=None, nullable=True)
+    branch: str | None = Field(default='main', min_length=1, max_length=256)
 
-    git_key_id: uuid.UUID | None = Field(default=None, foreign_key="gitkey.id", nullable=True)
-    git_key: GitKey | None = Relationship(back_populates="projects")
+    auth_id: uuid.UUID | None = Field(default=None, foreign_key="auth.id", nullable=True)
+    auth: Auth | None = Relationship(back_populates="projects")
 
     token: str | None = Field(default=None)
 
     created_at: datetime = Field(default_factory=now)
     updated_at: datetime = Field(default_factory=now, sa_column_kwargs={"onupdate": now})
 
-    environments: list["Environment"] = Relationship(back_populates="project", cascade_delete=True)
+    secrets: list["Secret"] = Relationship(back_populates="project", cascade_delete=True)
 
 
-class Environment(SQLModel, table=True):
+class Secret(SQLModel, table=True):
     """
-    Environments are assigned to branches and have their own set of Environment Variables
+    Secrets are AES-GCM encrypted
     """
     __table_args__ = (
-        UniqueConstraint("project_id", "name", name="project_and_env_name_unique"),
+        UniqueConstraint("project_id", "key", name="project_id_and_secret_key_unique"),
     )
     project_id: uuid.UUID | None = Field(default=None, foreign_key="project.id", primary_key=True)
-    project: Project | None = Relationship(back_populates="environments")
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, unique=True)
-
-    name: str = Field(index=True, nullable=False, min_length=1, max_length=256, default='default')
-    branch: str | None = Field(default='main', min_length=1, max_length=256)
-
-    created_at: datetime = Field(default_factory=now)
-    updated_at: datetime = Field(default_factory=now, sa_column_kwargs={"onupdate": now})
-
-    variables: list["Variable"] = Relationship(back_populates="environment", cascade_delete=True)
-
-
-class Variable(SQLModel, table=True):
-    """
-    Environment Variables are AES-GCM encrypted
-    """
-    __table_args__ = (
-        UniqueConstraint("environment_id", "key", name="environment_and_key_unique"),
-    )
-    environment_id: uuid.UUID = Field(default=None, foreign_key="environment.id", primary_key=True)
-    environment: Environment | None = Relationship(back_populates="variables")
+    project: Project | None = Relationship(back_populates="secrets")
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, unique=True)
 
@@ -129,6 +89,7 @@ class Variable(SQLModel, table=True):
 class Page(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     fqdn: str = Field(unique=True)
+    cors_hosts: str | None = Field(default=None)
     token: str | None = Field(default=None)
 
     created_at: datetime = Field(default_factory=now)

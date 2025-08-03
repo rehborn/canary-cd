@@ -1,0 +1,44 @@
+networks:
+  traefik:
+
+services:
+  canary-cd:
+    image: ghcr.io/rehborn/canary-cd:latest
+    build: .
+    ports:
+      - "8001:80"
+    networks:
+      - traefik
+    volumes:
+      - canary-cd:/data/
+      - traefik-dyn:/data/dynamic/
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file: .env
+    environment:
+      LOGLEVEL: 'DEBUG'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`localhost`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+
+  traefik:
+    image: traefik:latest
+    ports:
+      - "80:80"
+      # - "8080:8080"
+    networks:
+      - traefik
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-dyn:/etc/traefik/dynamic:ro"
+    restart: always
+
+volumes:
+  canary-cd:
+  traefik-dyn:
