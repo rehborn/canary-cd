@@ -23,7 +23,7 @@ documentation = "https://docs.rehborn.dev"
 source = "https://github.com/rehborn/canary-cd.git"
 
 [project.scripts]
-canarycd = "canary_cd.main:main"
+canary-cd = "canary_cd.main:main"
 
 [build-system]
 requires = ["hatchling"]
