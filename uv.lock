@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12, <3.14"
 
 [[package]]
@@ -37,7 +37,7 @@ wheels = [
 [[package]]
 name = "canary-cd"
 version = "0.1.dev2"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "docker" },
     { name = "fastapi" },

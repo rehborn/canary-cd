@@ -10,11 +10,11 @@ RUN apk add curl git openssh-keygen openssh-client-default docker-cli-compose --
 
 WORKDIR ${APP_DIR}
 COPY pyproject.toml uv.lock ${APP_DIR}
-RUN pip install uv --root-user-action=ignore && uv sync --locked
+RUN pip install uv --root-user-action=ignore && uv sync --locked --no-install-project
 
 
 ADD $SRC ${APP_DIR}/$SRC
 
 EXPOSE 80
 
-CMD ["uv", "run", "uvicorn", "canary_cd.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["uv", "run", "--no-sync", "uvicorn", "canary_cd.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]
