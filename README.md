@@ -33,18 +33,18 @@ ROOT_KEY=test python -m uvicorn canary_cd.main:app --reload --port 8001
 
 ### Linter
 ```shell
-poetry run pylint canary_cd
+uv run pylint canary_cd
 ```
 
 ### Tests
 ```shell
-poetry run pytest tests/
+uv run pytest tests/
 ```
 
 ### Coverage
 ```shell
-poetry run coverage run --source canary_cd -m pytest tests/
-poetry run coverage report -m --skip-covered
+uv run coverage run --source canary_cd -m pytest tests/
+uv run coverage report -m --skip-covered
 ```
 
 ### Docker
