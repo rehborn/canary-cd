@@ -29,7 +29,7 @@ jobs:
           # tag: ${{ github.ref_name }}
         run: |
           GIT_LOG=$(git log $(git describe --tags --abbrev=0)..HEAD --oneline --pretty=%s)
-          CONTAINER_ID=$(gh api /orgs/{owner}/packages/container/{repo}/versions|jq -r --arg tag ${tag} '.[] | select(.metadata.container.tags[] == $tag) | .id')
+          CONTAINER_ID=$(gh api /user/packages/container/{repo}/versions|jq -r --arg tag ${tag} '.[] | select(.metadata.container.tags[] == $tag) | .id')
           CONTAINER_URL="https://github.com/${{ github.repository }}/pkgs/container/${{ github.event.repository.name }}/${CONTAINER_ID}?tag=${tag}"
           DOCKER_PULL="docker pull ghcr.io/${{ github.repository }}:${{ inputs.version }}"
           PYPI_URL="https://pypi.org/project/${{ github.event.repository.name }}/"
