@@ -23,6 +23,13 @@ async def page_list(db: Database,
                     ) -> list[PageDetails]:
     return db.exec(select(Page).order_by(col(Page.fqdn).asc()).offset(offset).limit(limit)).all()
 
+# get page details
+@router.get('/{fqdn}', summary='Get Page Details')
+async def page_get(fqdn: str, db: Database) -> PageDetails:
+    page = db.exec(select(Page).where(Page.fqdn == fqdn)).first()
+    if not page:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Page does not exists')
+    return page
 
 # create page
 @router.post('', status_code=status.HTTP_201_CREATED, summary="Create a new page")
