@@ -37,7 +37,7 @@ jobs:
       - name: Run PyLint
         id: linter
         run: |
-          CHANGED_FILES=$(git diff --name-only HEAD 'src/**.py')
+          CHANGED_FILES=$(git diff --name-only HEAD 'canary_cd/**.py')
           uv run pylint $CHANGED_FILES --exit-zero --output-format=github || true
           {
             echo 'STDOUT<<EOF'
