@@ -78,6 +78,7 @@ jobs:
     name: Send Notifications
     runs-on: ubuntu-latest
     needs:
+      - bump
       - release
     steps:
       - name: Discord
