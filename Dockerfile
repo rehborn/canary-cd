@@ -9,11 +9,12 @@ ENV DATA_DIR=/data
 RUN apk add curl git openssh-keygen openssh-client-default docker-cli-compose --no-cache
 
 WORKDIR ${APP_DIR}
-COPY pyproject.toml poetry.lock ${APP_DIR}
-RUN pip install poetry && poetry install --no-root --only main
+COPY pyproject.toml uv.lock ${APP_DIR}
+RUN pip install uv --root-user-action=ignore && uv sync --locked
+
 
 ADD $SRC ${APP_DIR}/$SRC
 
 EXPOSE 80
 
-CMD ["poetry", "run", "uvicorn", "canary_cd.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]
+CMD ["uv", "run", "uvicorn", "canary_cd.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*"]
