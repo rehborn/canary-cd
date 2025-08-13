@@ -1,6 +1,9 @@
-FROM python:3.13-alpine
+FROM ghcr.io/astral-sh/uv:python3.13-alpine
 
 ARG SRC=canary_cd
+
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LOCKED=1
 
 ENV LOGLEVEL=INFO
 ENV APP_DIR=/app
@@ -10,7 +13,7 @@ RUN apk add curl git openssh-keygen openssh-client-default docker-cli-compose --
 
 WORKDIR ${APP_DIR}
 COPY pyproject.toml uv.lock ${APP_DIR}
-RUN pip install uv --root-user-action=ignore && uv sync --locked --no-install-project
+RUN uv sync --no-install-project
 
 
 ADD $SRC ${APP_DIR}/$SRC
