@@ -1,22 +1,19 @@
 import json
-import os
 import re
 import shutil
 import tarfile
 import tempfile
-import uuid
 import yaml
 from asyncio.subprocess import create_subprocess_shell, PIPE
 from pathlib import Path
-from time import time, strftime
 
 import git
-import docker
 
 from canary_cd.database import *
 from canary_cd.dependencies import ch
-from canary_cd.settings import logger, REPO_CACHE, PAGES_CACHE, STATIC_BACKEND_NAME, DYN_CONFIG_CACHE
+from canary_cd.settings import logger, REPO_CACHE, PAGES_CACHE, DYN_CONFIG_CACHE, HTTPD, HTTPD_CONFIG_DUMP
 from canary_cd.utils.notify import discord_webhook
+from canary_cd.utils.httpd_conf import TraefikConfig
 
 REMOTE_RE = r'^(?:(https?|git|git\+ssh|ssh):\/\/)?(?:([^@\/:]+)(?::([^@\/:]+))?@)?([^:\/]+)(?::(\d+))?(?:[\/:](.+?))(?:\.git)?$'
 
@@ -308,78 +305,16 @@ async def page_init(fqdn: str, cors_hosts: str):
     open(PAGES_CACHE / fqdn / 'index.html', 'w').write('<h1>PONG</h1>')
     open(PAGES_CACHE / fqdn / '404.html', 'w').write('<h1>404</h1>')
 
-    cors_hosts = cors_hosts.split(',') if cors_hosts else []
-    await page_traefik_config(fqdn, cors_hosts)
+    if HTTPD_CONFIG_DUMP and HTTPD == 'traefik':
+        tc = TraefikConfig()
+        tc.add_page(fqdn, cors_hosts)
+        with open(DYN_CONFIG_CACHE / f'{fqdn}.yml', 'w') as dump:
+            yaml.dump(tc.render(), dump)
 
 
-async def page_traefik_config(fqdn: str, cors_hosts: list = None):
-    config = {
-        'http': {
-            'routers': {
-                f'backend-router-{fqdn}': {
-                    'service': f'backend-service-{fqdn}',
-                    'rule': f'Host(`{fqdn}`)',
-                    'entryPoints': 'tls',
-                    'tls': {
-                        'certResolver': 'letsencrypt'
-                    }
-
-                }
-            },
-            'services': {
-                f'backend-service-{fqdn}': {
-                    'loadBalancer': {
-                        'passHostHeader': True,
-                        'servers': [{
-                            'url': STATIC_BACKEND_NAME,
-                        }]
-                    }
-                }
-            }
-        }
-    }
-    if cors_hosts:
-        config['http']['routers'][f'backend-router-{fqdn}']['middlewares'] = [f'cors-middleware-{fqdn}']
-        config['http']['middlewares'] = {
-            f'cors-middleware-{fqdn}': {
-                'headers': {
-                    'accessControlAllowMethods': ['GET', 'OPTIONS', 'PUT'],
-                    'accessControlAllowHeaders': '*',
-                    'accessControlAllowOriginList': cors_hosts,
-                    'accessControlMaxAge': 100,
-                    'addVaryHeader': True,
-                }
-            }
-        }
-    with open(DYN_CONFIG_CACHE / f'{fqdn}.yml', 'w') as dump:
-        yaml.dump(config, dump)
-
-
-async def redirect_traefik_config(source: str, destination: str):
-    config = {
-        'http': {
-            'routers': {
-                f'forward-router-{source}': {
-                    'service': 'noop@internal',
-                    'rule': f'Host(`{source}`)',
-                    'entryPoints': 'tls',
-                    'tls': {
-                        'certResolver': 'letsencrypt'
-                    },
-                    'middlewares': [f'forward-middleware-{source}'],
-                    'priority': 1,
-                }
-            },
-            'middlewares': {
-                f'forward-middleware-{source}': {
-                    'redirectRegex': {
-                        'regex': f'^https://{source}/(.*)',
-                        'replacement': f'https://{destination}/${1}',
-                        'permanent': True,
-                    }
-                }
-            }
-        }
-    }
-    with open(DYN_CONFIG_CACHE / f'{source}.yml', 'w') as dump:
-        yaml.dump(config, dump)
+async def redirect_init(source: str, destination: str):
+    if HTTPD_CONFIG_DUMP and HTTPD == 'traefik':
+        tc = TraefikConfig()
+        tc.add_redirect(source, destination)
+        with open(DYN_CONFIG_CACHE / f'{source}.yml', 'w') as dump:
+            yaml.dump(tc.render(), dump)

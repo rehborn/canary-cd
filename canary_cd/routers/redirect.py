@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, BackgroundTasks, Query
 
 from canary_cd.dependencies import *
-from canary_cd.utils.tasks import redirect_traefik_config
+from canary_cd.utils.tasks import redirect_init
 
 router = APIRouter(prefix='/redirect',
                    tags=['Redirect'],
@@ -35,7 +35,7 @@ async def redirect_create(redirect: RedirectCreate, db: Database, background_tas
     db.commit()
     db.refresh(db_redirect)
 
-    background_tasks.add_task(redirect_traefik_config, db_redirect.source, db_redirect.destination)
+    background_tasks.add_task(redirect_init, db_redirect.source, db_redirect.destination)
 
     return db_redirect
 
@@ -51,7 +51,7 @@ async def redirect_update(fqdn: str, redirect: RedirectUpdate, db: Database, bac
     db.refresh(db_redirect)
 
     # Creat config
-    background_tasks.add_task(redirect_traefik_config, db_redirect.source, db_redirect.destination)
+    background_tasks.add_task(redirect_init, db_redirect.source, db_redirect.destination)
 
     return db_redirect
 
@@ -65,6 +65,7 @@ async def redirect_delete(fqdn: str, db: Database):
     db.commit()
 
     # Cleanup config
-    os.remove(DYN_CONFIG_CACHE / f'{fqdn}.yml')
+    if HTTPD_CONFIG_DUMP and HTTPD == 'traefik':
+        os.remove(DYN_CONFIG_CACHE / f'{fqdn}.yml')
 
     return {"detail": f"{fqdn} deleted"}

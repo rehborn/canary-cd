@@ -28,6 +28,8 @@ if SALT is None:
     with open('.env', 'w', encoding='utf-8') as env:
         env.write(f'SALT={SALT}\n')
 
+HTTPD = os.getenv('HTTPD', 'traefik')
+HTTPD_CONFIG_DUMP = os.getenv('HTTPD_CONFIG_DUMP', False)
 
 log_formatter = logging.Formatter("%(levelname)s: %(asctime)s %(name)s: %(message)s")
 loglevel = logging.getLevelName(os.environ.get('LOGLEVEL', 'DEBUG'))

@@ -1,4 +1,4 @@
-from canary_cd.routers import config, auth, project, secret, page, redirect, deploy, webhook
+from canary_cd.routers import config, auth, project, secret, page, redirect, deploy, webhook, export
 
 routers = [
     config.router,
@@ -9,4 +9,5 @@ routers = [
     redirect.router,
     deploy.router,
     webhook.router,
+    export.router,
 ]

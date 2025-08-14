@@ -65,7 +65,8 @@ async def page_delete(fqdn: str, db: Database) -> {}:
 
     # Cleanup static files and config
     shutil.rmtree(PAGES_CACHE / fqdn)
-    os.remove(DYN_CONFIG_CACHE / f'{fqdn}.yml')
+    if HTTPD_CONFIG_DUMP and HTTPD == 'traefik':
+        os.remove(DYN_CONFIG_CACHE / f'{fqdn}.yml')
 
     return {"detail": f"{fqdn} deleted"}
 
