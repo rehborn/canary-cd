@@ -1,13 +1,15 @@
-"""Main Test"""
+"""Main Tests"""
 from context import *
 
-def test_root(client: TestClient):
-    response = client.get("/")
+@pytest.mark.anyio
+async def test_root(client: AsyncClient, session: Session):
+    response = await client.get("/")
     assert response.status_code == 200
     assert response.json()["detail"] == "I'm a Canary!"
 
-def test_failed_auth(client: TestClient):
+@pytest.mark.anyio
+async def test_failed_auth(client: AsyncClient):
     client.headers = {}
-    response = client.get("/project/list")
+    response = await client.get("/config")
     assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
