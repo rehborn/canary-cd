@@ -4,7 +4,7 @@ import shutil
 import tarfile
 import tempfile
 import yaml
-from asyncio.subprocess import create_subprocess_shell, PIPE
+from asyncio import subprocess
 from pathlib import Path
 
 import git
@@ -21,7 +21,7 @@ REMOTE_RE = r'^(?:(https?|git|git\+ssh|ssh):\/\/)?(?:([^@\/:]+)(?::([^@\/:]+))?@
 async def _run_cmd(cmd: str, env=None) -> tuple[str, str]:
     if env is None:
         env = {}
-    proc = await create_subprocess_shell(cmd, stdout=PIPE, stderr=PIPE, env={**os.environ, **env})
+    proc = await subprocess.create_subprocess_shell(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={**os.environ, **env})
     stdout, stderr = await proc.communicate()
     return stdout.decode(), stderr.decode()
 

@@ -4,15 +4,17 @@ import tempfile
 import pytest
 import sys
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine
+from httpx import ASGITransport, AsyncClient
+# from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 import logging
 
+from canary_cd.main import lifespan
 
 logger = logging.getLogger(__name__)
 
 # Overwrite auto generation for SALT and API_KEY settings
-SALT='DWlKl7lBstE5M/FEv0v6Fx53nZDF0jJkLMURflbIRSw='
+SALT = 'DWlKl7lBstE5M/FEv0v6Fx53nZDF0jJkLMURflbIRSw='
 ROOT_KEY = 'test'
 
 os.environ.setdefault('SALT', SALT)
@@ -29,19 +31,30 @@ from canary_cd.main import app  # pylint: disable=import-error,wrong-import-posi
 from canary_cd.database import *
 from canary_cd.utils.crypto import CryptoHelper
 
-@pytest.fixture(name="client")
-def client_fixture(session: Session):
+
+@pytest.fixture(scope="session")
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.fixture(name="client", scope="session")
+async def client_fixture(session: Session):
     def get_session_override():
         return session
+
     app.dependency_overrides[get_session] = get_session_override  # noqa
+
     headers = {"Authorization": f"Bearer {ROOT_KEY}"}
-    client = TestClient(app, headers=headers)
-    yield client
+
+    transport = ASGITransport(app=app)
+    async with lifespan(app):
+        async with AsyncClient(transport=transport, headers=headers, base_url="http://test") as client:
+            yield client
     app.dependency_overrides.clear()  # noqa
 
 
-@pytest.fixture(name="session")
-def session_fixture():
+@pytest.fixture(name="session", scope="session")
+async def session_fixture():
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
