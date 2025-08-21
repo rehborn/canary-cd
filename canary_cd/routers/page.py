@@ -1,5 +1,4 @@
 import shutil
-import tempfile
 
 from sqlmodel import col
 from canary_cd.utils.tasks import page_init
@@ -18,10 +17,18 @@ router = APIRouter(prefix='/page',
 # list page
 @router.get('', summary="List all pages")
 async def page_list(db: Database,
-                    offset: int = 0,
-                    limit: Annotated[int, Query(le=100)] = 100
+                    offset: Optional[int] = 0,
+                    limit: Annotated[int, Query(le=100)] = 100,
+                    filter_by: Optional[str] = '',
+                    ordering: Optional[str] = 'fqdn',
                     ) -> list[PageDetails]:
-    return db.exec(select(Page).order_by(col(Page.fqdn).asc()).offset(offset).limit(limit)).all()
+    return db.exec(select(Page)
+                   .order_by(desc(ordering))
+                   .filter(column("fqdn").contains(filter_by))
+                   .offset(offset)
+                   .limit(limit)
+                   ).all()
+
 
 # get page details
 @router.get('/{fqdn}', summary='Get Page Details')
@@ -43,14 +50,14 @@ async def page_create(page: PageCreate, db: Database, background_tasks: Backgrou
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='Already in use by Redirect source {db_redirect_source.source}')
 
-    db_page = Page.model_validate(PageCreate(fqdn=page.fqdn))
+    db_page = Page.model_validate(PageCreate(fqdn=page.fqdn, cors_hosts=page.cors_hosts))  # TODO
     db.add(db_page)
     db.commit()
     db.refresh(db_page)
 
     background_tasks.add_task(page_init, page.fqdn, page.cors_hosts)
 
-    return db_page
+    return PageDetails(**db_page.model_dump())
 
 
 # delete page
