@@ -42,6 +42,3 @@ dev = [
     "httpx>=0.28.1,<0.29",
     "pytest-dependency>=0.6.0",
 ]
-#
-#[tool.uv]
-#package = false
