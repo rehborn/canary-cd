@@ -81,7 +81,6 @@ async def project_update(name: str, data: ProjectUpdate, db: Database) -> Projec
     project_db = db.exec(select(Project).where(Project.name == name)).first()
     if not project_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Project not found')
-    print(data)
 
     project_data = data.model_dump(exclude_unset=True)
     project_db.sqlmodel_update(project_data)
