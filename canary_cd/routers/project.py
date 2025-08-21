@@ -20,8 +20,12 @@ async def project_list(db: Database,
                        filter_by: Optional[str] = '',
                        ordering: Optional[str] = 'updated_at',
                        ) -> list[ProjectDetails]:
-    query = db.query(Project).filter(column("name").contains(filter_by))
-    return query.order_by(desc(ordering)).offset(offset).limit(limit).all()
+    return db.exec(select(Project)
+                   .order_by(desc(ordering))
+                   .filter(column("name").contains(filter_by))
+                   .offset(offset)
+                   .limit(limit)
+                   ).all()
 
 
 # get project details
