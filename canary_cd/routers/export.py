@@ -1,10 +1,12 @@
 from socket import gethostbyname
 
 from _socket import gaierror
-from fastapi import APIRouter, Request
-from sqlmodel import col
+from fastapi import APIRouter, Request, Response, HTTPException, Depends
+from fastapi.responses import JSONResponse
+from sqlmodel import select
 
-from canary_cd.dependencies import *
+from canary_cd.database import Database, Page, Redirect
+from canary_cd.settings import HTTPD
 from canary_cd.utils.httpd_conf import TraefikConfig
 
 
@@ -28,7 +30,7 @@ router = APIRouter(prefix='/export',
 
 
 @router.get('/traefik.json', summary="traefik config provider")
-async def traefik_config(request: Request, db: Database):
+async def traefik_config(db: Database) -> Response:
     tc = TraefikConfig(default_service=True)
 
     pages = db.exec(select(Page)).all()
@@ -39,4 +41,4 @@ async def traefik_config(request: Request, db: Database):
     for redirect in redirects:
         tc.add_redirect(redirect.source, redirect.destination)
 
-    return tc.render()
+    return JSONResponse(tc.render())
