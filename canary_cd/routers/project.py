@@ -43,11 +43,12 @@ async def project_create(data: ProjectCreate, db: Database) -> ProjectDetails:
     if db.exec(select(Project).where(Project.name == data.name)).first():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Project already exists')
 
-    def get_random_name(exists=True) -> str:
-        while exists:
-            name = random_words()
-            if not db.exec(select(Project).where(Project.name == name)).first():
-                return name
+    def get_random_name(n=2) -> str:
+        while True:
+            random_word = random_words(n)
+            if not db.exec(select(Project).where(Project.name == random_word)).first():
+                return random_word
+            n += 1
 
     if not data.name:
         data.name = get_random_name()
