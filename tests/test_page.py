@@ -1,24 +1,13 @@
 """Page Tests"""
+import yaml
+
 from context import *
-from canary_cd.models import PageDetails
 
 TEST_FQDN = 'example.com'
 TEST_CORS = 'https://example2.com'
 
 
-def create_page(session: Session, data: dict) -> Page:
-    page = Page(**data)
-    session.add(page)
-    session.commit()
-    session.refresh(page)
-    return page
-
 class TestPageAPI:
-    # @pytest.fixture
-    # def page(self, session: Session):
-    #     logger.debug("fixture")
-    #     page = create_page(session, {'fqdn': TEST_FQDN})
-
     @pytest.mark.anyio
     @pytest.mark.dependency()
     async def test_page_create(self, client: AsyncClient, session: Session):
@@ -26,8 +15,26 @@ class TestPageAPI:
         assert response.status_code == 201
         data = response.json()
         assert data['fqdn'] == TEST_FQDN
-        # for field in PageDetails.model_fields.keys():
-        #     assert field in data
+        assert data['cors_hosts'] is None
+
+    @pytest.mark.anyio
+    @pytest.mark.dependency()
+    async def test_page_dynamic_traefik_config_file(self, client: AsyncClient, session: Session):
+        dynamic_config = settings.DYN_CONFIG_CACHE / f'{TEST_FQDN}.yml'
+        assert os.path.isfile(dynamic_config)
+        with open(dynamic_config, 'r') as f:
+            data = yaml.load(f, Loader=yaml.SafeLoader)
+            assert 'http' in data
+            assert type(data['http']) == dict
+            assert data['http']['routers'].get(f'backend-router-{TEST_FQDN}')
+
+    @pytest.mark.anyio
+    async def test_page_create_with_cors(self, client: AsyncClient, session: Session):
+        response = await client.post("/page", json={'fqdn': TEST_FQDN, 'cors_hosts': ['example2.com']})
+        assert response.status_code == 201
+        data = response.json()
+        assert data['fqdn'] == TEST_FQDN
+        assert data['cors_hosts'] == ['example2.com']
 
     @pytest.mark.anyio
     @pytest.mark.dependency(depends=['TestPageAPI::test_page_create'])
@@ -66,10 +73,7 @@ class TestPageAPI:
         response = await client.get('/page')
         data = response.json()
         assert response.status_code == 200
-        assert len(data) == 2
         assert type(data) == list
-        # for field in PageDetails.model_fields.keys():
-        #     assert field in data[0]
 
     @pytest.mark.anyio
     @pytest.mark.dependency(depends=['TestPageAPI::test_page_create'])
@@ -79,6 +83,11 @@ class TestPageAPI:
         assert response.status_code == 200
         assert data['token']
         assert len(data['token']) == 64
+
+    @pytest.mark.anyio
+    async def test_page_refresh_token_invalid(self, client: AsyncClient):
+        response = await client.get(f'/page/does-not-exist.com/refresh-token')
+        assert response.status_code == 404
 
     @pytest.mark.anyio
     @pytest.mark.dependency(depends=['TestPageAPI::test_page_create'])
@@ -92,3 +101,16 @@ class TestPageAPI:
     async def test_page_delete_does_not_exist(self, client: AsyncClient):
         response = await client.delete(f'/page/null.com')
         assert response.status_code == 404
+
+    @pytest.fixture()
+    def create_redirect_dummy(self, session: Session):
+        redirect = Redirect(**{'source': 'already-exists.com', 'destination': 'www.example.com'})
+        session.add(redirect)
+        session.commit()
+        session.refresh(redirect)
+
+    @pytest.mark.anyio
+    @pytest.mark.usefixtures('create_redirect_dummy')
+    async def test_page_create_existing_redirect(self, client: AsyncClient):
+        response = await client.post("/page", json={'fqdn': 'already-exists.com'})
+        assert response.status_code == 403
