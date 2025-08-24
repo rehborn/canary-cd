@@ -48,7 +48,7 @@ async def page_create(page: PageCreate, db: Database, background_tasks: Backgrou
     db_redirect_source = db.exec(select(Redirect).where(Redirect.source == page.fqdn)).first()
     if db_redirect_source:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail='Already in use by Redirect source {db_redirect_source.source}')
+                            detail=f'Already in use by Redirect source {db_redirect_source.source}')
 
     db_page = Page.model_validate(PageCreate(fqdn=page.fqdn, cors_hosts=page.cors_hosts))  # TODO
     db.add(db_page)
