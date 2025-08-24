@@ -108,10 +108,10 @@ class TestProjectAPI:
     @pytest.mark.dependency(depends=['TestProjectAPI::test_project_create'])
     async def test_project_update(self, client: AsyncClient, session: Session):
         response = await client.put(f'/project/{TEST_NAME}', json=TEST_PROJECT)
-        # data = response.json()
-        # assert 'name' in data.keys()
-        # assert 'remote' in data.keys()
-        # assert response.status_code == 200
+        data = response.json()
+        assert 'name' in data.keys()
+        assert 'remote' in data.keys()
+        assert response.status_code == 200
 
     @pytest.mark.anyio
     @pytest.mark.dependency(depends=['TestProjectAPI::test_project_create'])
