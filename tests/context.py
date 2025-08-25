@@ -10,7 +10,7 @@ ROOT_KEY = 'test'
 os.environ['ROOT_KEY'] = ROOT_KEY
 os.environ['HTTPD_CONFIG_DUMP'] = '1'
 
-temp = tempfile.TemporaryDirectory(delete=False)
+temp = tempfile.TemporaryDirectory(delete=True)
 os.environ['DATA_DIR'] = temp.name
 
 from canary_cd import settings
