@@ -282,7 +282,7 @@ async def deploy_status(repo_path: Path, branch=None):
 async def extract_page(fqdn, temp_dir, job_id=None):
     logger.debug(f"Page {job_id}: extracting")
     content = tarfile.open(Path(temp_dir.name, 'stream-upload'))
-    content.extractall(PAGES_CACHE / f'{fqdn}-temp')
+    content.extractall(PAGES_CACHE / f'{fqdn}-temp', filter='data')
 
     dist_dir = "."
     for _dist_dir in os.listdir(PAGES_CACHE / f'{fqdn}-temp'):
