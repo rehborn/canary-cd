@@ -73,7 +73,7 @@ async def secret_delete(project: str, variable: str, db: Database) -> {}:
     db_var = db.exec(q).first()
 
     if not db_var:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Variable does not exists')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Secret does not exists')
 
     db.delete(db_var)
     db.commit()

@@ -1,9 +1,11 @@
-from fastapi import APIRouter, status, File, BackgroundTasks, Depends, HTTPException, UploadFile, Query
+from fastapi import APIRouter, status, Query
+from sqlalchemy import desc
 
 from canary_cd.dependencies import *
 from canary_cd.utils.tasks import generate_ssh_keypair, generate_ssh_pubkey
 from canary_cd.utils.crypto import random_words
-
+from canary_cd.database import Auth
+from canary_cd.models import AuthDetails, AuthDetailsCount, AuthCreate
 
 router = APIRouter(prefix='/auth',
                    tags=['Authentication'],
@@ -14,13 +16,17 @@ router = APIRouter(prefix='/auth',
 
 @router.get('', summary="List all Authentication Keys")
 async def auth_list(db: Database,
-                       offset: Optional[int] = 0,
-                       limit: Annotated[int, Query(le=100)] = 100,
-                       filter_by: Optional[str] = '',
-                       ordering: Optional[str] = 'updated_at',
-                       ) -> list[AuthDetails]:
-    query = db.query(Auth).filter(column("name").contains(filter_by))
-    return query.order_by(desc(ordering)).offset(offset).limit(limit).all()
+                    offset: Optional[int] = 0,
+                    limit: Annotated[int, Query(le=100)] = 100,
+                    filter_by: Optional[str] = '',
+                    ordering: Optional[str] = 'updated_at',
+                    ) -> list[AuthDetails]:
+    return db.exec(select(Auth)
+                   .order_by(desc(ordering))
+                   .filter(column("name").contains(filter_by))
+                   .offset(offset)
+                   .limit(limit)
+                   ).all()
 
 
 @router.get('/{name}', summary='Get Authentication Key Details')

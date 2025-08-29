@@ -20,8 +20,12 @@ async def project_list(db: Database,
                        filter_by: Optional[str] = '',
                        ordering: Optional[str] = 'updated_at',
                        ) -> list[ProjectDetails]:
-    query = db.query(Project).filter(column("name").contains(filter_by))
-    return query.order_by(desc(ordering)).offset(offset).limit(limit).all()
+    return db.exec(select(Project)
+                   .order_by(desc(ordering))
+                   .filter(column("name").contains(filter_by))
+                   .offset(offset)
+                   .limit(limit)
+                   ).all()
 
 
 # get project details
@@ -39,11 +43,12 @@ async def project_create(data: ProjectCreate, db: Database) -> ProjectDetails:
     if db.exec(select(Project).where(Project.name == data.name)).first():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Project already exists')
 
-    def get_random_name(exists=True) -> str:
-        while exists:
-            name = random_words()
-            if not db.exec(select(Project).where(Project.name == name)).first():
-                return name
+    def get_random_name(n=2) -> str:
+        while True:
+            random_word = random_words(n)
+            if not db.exec(select(Project).where(Project.name == random_word)).first():
+                return random_word
+            n += 1
 
     if not data.name:
         data.name = get_random_name()
@@ -77,7 +82,6 @@ async def project_update(name: str, data: ProjectUpdate, db: Database) -> Projec
     project_db = db.exec(select(Project).where(Project.name == name)).first()
     if not project_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Project not found')
-    print(data)
 
     project_data = data.model_dump(exclude_unset=True)
     project_db.sqlmodel_update(project_data)

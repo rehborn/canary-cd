@@ -23,12 +23,10 @@ async def redirect_list(db: Database,
 @router.post('', status_code=status.HTTP_201_CREATED, summary="Create a new Redirect")
 async def redirect_create(redirect: RedirectCreate, db: Database, background_tasks: BackgroundTasks) -> RedirectDetails:
     if db.exec(select(Redirect).where(Redirect.source == redirect.source)).first():
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail='Redirect already exists')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Redirect already exists')
 
     if db.exec(select(Page).where(Page.fqdn == redirect.source)).first():
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail='Page with this FQDN already exists')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Page with this FQDN already exists')
 
     db_redirect = Redirect.model_validate(redirect)
     db.add(db_redirect)
@@ -39,8 +37,12 @@ async def redirect_create(redirect: RedirectCreate, db: Database, background_tas
 
     return db_redirect
 
+
 @router.put('/{fqdn}', status_code=status.HTTP_200_OK, summary="Update a Redirect")
-async def redirect_update(fqdn: str, redirect: RedirectUpdate, db: Database, background_tasks: BackgroundTasks) -> RedirectDetails:
+async def redirect_update(fqdn: str,
+                          redirect: RedirectUpdate,
+                          db: Database,
+                          background_tasks: BackgroundTasks) -> RedirectDetails:
     db_redirect = db.exec(select(Redirect).where(Redirect.source == fqdn)).first()
     if not db_redirect:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Redirect not found')
@@ -54,6 +56,7 @@ async def redirect_update(fqdn: str, redirect: RedirectUpdate, db: Database, bac
     background_tasks.add_task(redirect_init, db_redirect.source, db_redirect.destination)
 
     return db_redirect
+
 
 @router.delete('/{fqdn}', status_code=status.HTTP_200_OK, summary="Delete a Redirect")
 async def redirect_delete(fqdn: str, db: Database):

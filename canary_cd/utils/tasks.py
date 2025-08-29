@@ -4,7 +4,7 @@ import shutil
 import tarfile
 import tempfile
 import yaml
-from asyncio.subprocess import create_subprocess_shell, PIPE
+from asyncio import subprocess
 from pathlib import Path
 
 import git
@@ -21,7 +21,7 @@ REMOTE_RE = r'^(?:(https?|git|git\+ssh|ssh):\/\/)?(?:([^@\/:]+)(?::([^@\/:]+))?@
 async def _run_cmd(cmd: str, env=None) -> tuple[str, str]:
     if env is None:
         env = {}
-    proc = await create_subprocess_shell(cmd, stdout=PIPE, stderr=PIPE, env={**os.environ, **env})
+    proc = await subprocess.create_subprocess_shell(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env={**os.environ, **env})
     stdout, stderr = await proc.communicate()
     return stdout.decode(), stderr.decode()
 
@@ -282,7 +282,7 @@ async def deploy_status(repo_path: Path, branch=None):
 async def extract_page(fqdn, temp_dir, job_id=None):
     logger.debug(f"Page {job_id}: extracting")
     content = tarfile.open(Path(temp_dir.name, 'stream-upload'))
-    content.extractall(PAGES_CACHE / f'{fqdn}-temp')
+    content.extractall(PAGES_CACHE / f'{fqdn}-temp', filter='data')
 
     dist_dir = "."
     for _dist_dir in os.listdir(PAGES_CACHE / f'{fqdn}-temp'):
