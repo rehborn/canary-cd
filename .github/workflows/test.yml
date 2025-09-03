@@ -13,9 +13,9 @@ jobs:
       pull-requests: write
 
     strategy:
-      max-parallel: 3
+      max-parallel: 2
       matrix:
-        python-version: [ 3.12, 3.13, 3.14 ]
+        python-version: [ 3.12, 3.13 ]
 
     if: github.actor != 'renovate[bot]'
 
@@ -44,7 +44,7 @@ jobs:
           
 
       - name: Comment on PR
-        if: github.event_name == 'pull_request' && matrix.python-version == '3.14'
+        if: github.event_name == 'pull_request' && matrix.python-version == '3.13'
         uses: actions/github-script@v7
         with:
           script: |
