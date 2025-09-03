@@ -13,7 +13,7 @@ jobs:
       pull-requests: write
 
     strategy:
-      max-parallel: 2
+      max-parallel: 4
       matrix:
         python-version: [ 3.12, 3.13, 3.14, 3.15 ]
 
@@ -26,16 +26,11 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Dependencies
-        run: |
-          python -m pip install uv
-          uv sync --locked --all-groups
-
-      - name: Run Tests
+      - name: Run Tests for Python ${{ matrix.python-version }}
         id: test
         run: |
           {
@@ -46,7 +41,7 @@ jobs:
           
 
       - name: Comment on PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && matrix.python-version == '3.15'
         uses: actions/github-script@v7
         with:
           script: |
