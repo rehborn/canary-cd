@@ -1,7 +1,10 @@
-from fastapi import APIRouter, status, BackgroundTasks
+from fastapi import APIRouter, Response, status, BackgroundTasks
+from fastapi.responses import JSONResponse
 
 from canary_cd.utils.notify import discord_webhook
 from canary_cd.dependencies import *
+from canary_cd.models import ConfigUpdate
+from canary_cd.utils.pattern import CONFIG_KEYS
 
 router = APIRouter(prefix='/config',
                    tags=['Canary Config'],
@@ -15,6 +18,7 @@ router = APIRouter(prefix='/config',
 async def list_config(db: Database) -> list[ConfigUpdate]:
     config = db.exec(select(Config).where(Config.key != 'ROOT_KEY')).all()
     return config
+
 
 # set config
 @router.put('', summary='Update Configuration')
@@ -44,7 +48,7 @@ async def config_set(data: ConfigUpdate, db: Database, background_task: Backgrou
 
 
 @router.delete('/{key}', summary='Delete Configuration')
-async def config_delete(key: str, db: Database) -> {}:
+async def config_delete(key: str, db: Database) -> Response:
     if key == 'ROOT_KEY':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='ROOT_KEY cannot be deleted')
     q = select(Config).where(Config.key == key)
@@ -55,4 +59,4 @@ async def config_delete(key: str, db: Database) -> {}:
     db.delete(config)
     db.commit()
 
-    return {'detail': f'Config Key {key} deleted'}
+    return JSONResponse({'detail': f'{key} deleted'})

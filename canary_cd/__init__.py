@@ -1,10 +1,12 @@
 __version__ = '0.0.0'
 
+import os
 from tomllib import load as toml_load
+from importlib import metadata
 
 try:
-    data = toml_load(open("pyproject.toml", "rb"))
-    __version__ = data['project']['version']
-except FileNotFoundError:
-    print("pyproject.toml not found")
-    exit(1)
+    __version__ = metadata.version('canary-cd')
+except metadata.PackageNotFoundError:
+    if os.path.isfile("pyproject.toml"):
+        data = toml_load(open("pyproject.toml", "rb"))
+        __version__ = data['project']['version']
