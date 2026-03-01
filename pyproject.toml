@@ -45,7 +45,7 @@ include = [
 dev = [
     "pytest>=8.3.4,<9",
     "coverage>=7.6.9,<8",
-    "pylint>=3.3.3,<4",
+    "pylint>=4.0.5,<5",
     "httpx>=0.28.1,<0.29",
     "pytest-dependency>=0.6.0",
 ]
